@@ -11,7 +11,10 @@ import java.util.concurrent.TimeUnit
 object OaidFacade {
     internal val IMPL: OaidSdk by lazy {
         val impl: OaidSdk = try {
-            OaidSdkImplV1026.tryCreate() ?: OaidSdkImplV1025.tryCreate() ?: OaidSdkImplStub()
+            OaidSdkImplV1026.tryCreate()
+                ?: OaidSdkImplV1025.tryCreate()
+                ?: OaidSdkImplV1013.tryCreate()
+                ?: OaidSdkImplStub()
         } catch (t: Throwable) {
             t.printStackTrace()
             OaidSdkImplStub()
@@ -34,7 +37,8 @@ object OaidFacade {
                 val latch = CountDownLatch(1)
                 val result = Array<CachedResult?>(1) { null }
 
-                val callback = object : OaidCallback {
+                // 超时检测回调的包装callback
+                val callback = TimeoutOaidCallbackWrapper(object : OaidCallback {
                     override fun onOaidResult(
                         code: Int,
                         msg: String?,
@@ -45,9 +49,10 @@ object OaidFacade {
                         result[0] = CachedResult(code, msg, oaid, vaid, aaid)
                         latch.countDown()
                     }
-
-                }
+                })
                 val handler = IdentifierListenerHandler(callback)
+
+                TimeoutChecker.check(3000, callback)
 
                 val code: Int = IMPL.initSdk(context, handler)
                 when (code) {
@@ -62,10 +67,6 @@ object OaidFacade {
                         callback.onOaidResult(code, "manufacturer not support", null, null, null)
                     ErrorCode.INIT_ERROR_RESULT_DELAY -> {
                         //获取接口是异步的，结果会在回调中返回，回调执行的回调可能在工作线程
-                        // 添加超时检测回调
-                        val wrapper = TimeoutOaidCallbackWrapper(callback)
-                        handler.callback = wrapper
-                        TimeoutChecker.check(3000, wrapper)
                     }
                     ErrorCode.INIT_HELPER_CALL_ERROR ->
                         //反射调用出错
@@ -138,7 +139,7 @@ internal fun log(msg: String) {
     Log.i(TAG, msg)
 }
 
-internal class IdentifierListenerHandler(var callback: OaidCallback) : InvocationHandler {
+internal class IdentifierListenerHandler(private val callback: OaidCallback) : InvocationHandler {
     @Throws(Throwable::class)
     override fun invoke(proxy: Any, method: Method, args: Array<Any?>?): Any? {
         //public void OnSupport(boolean isSupport, IdSupplier idSupplier)
@@ -151,9 +152,7 @@ internal class IdentifierListenerHandler(var callback: OaidCallback) : Invocatio
                     callback.onOaidResult(199, "idSupplier is null", null, null, null)
                     return null
                 }
-                val hostClassLoader = javaClass.classLoader
-                val cls_IdSupplier =
-                    hostClassLoader.loadClass("com.bun.miitmdid.interfaces.IdSupplier")
+                val cls_IdSupplier = obj_idSupplier.javaClass
                 val m_getOAID = cls_IdSupplier.getDeclaredMethod("getOAID")
                 val m_getVAID = cls_IdSupplier.getDeclaredMethod("getVAID")
                 val m_getAAID = cls_IdSupplier.getDeclaredMethod("getAAID")

@@ -17,7 +17,7 @@ internal interface OaidSdk {
     fun initSdk(context: Context, objIIdentifierListener: Any): Int
 
     fun initSdk(context: Context, handler: IdentifierListenerHandler): Int {
-        try {
+        return try {
             val hostClassLoader = context.classLoader
             val cls_IIdentifierListener =
                 hostClassLoader.loadClass("com.bun.miitmdid.interfaces.IIdentifierListener")
@@ -25,10 +25,10 @@ internal interface OaidSdk {
                 Proxy.newProxyInstance(hostClassLoader,
                     arrayOf(cls_IIdentifierListener),
                     handler)
-            return initSdk(context, obj_identifierListener)
+            initSdk(context, obj_identifierListener)
         } catch (t: Throwable){
             t.printStackTrace()
-            return ErrorCode.INIT_HELPER_CALL_ERROR
+            ErrorCode.INIT_HELPER_CALL_ERROR
         }
 
     }

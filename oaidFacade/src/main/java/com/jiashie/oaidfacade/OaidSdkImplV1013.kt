@@ -1,21 +1,21 @@
 package com.jiashie.oaidfacade
 
 import android.content.Context
-import android.text.TextUtils
 import java.lang.Boolean
+import java.lang.reflect.Proxy
 import kotlin.Any
 import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.Throwable
+import kotlin.arrayOf
+import kotlin.let
 
-/**
- * v1.0.25及之前版本
- */
-internal class OaidSdkImplV1025 : OaidSdk{
+internal class OaidSdkImplV1013 : OaidSdk{
     companion object {
-        private const val IIdentifierListener_name = "com.bun.miitmdid.interfaces.IIdentifierListener"
+        private const val IIdentifierListener_name = "com.bun.supplier.IIdentifierListener"
         private const val MdidSdkHelper_name = "com.bun.miitmdid.core.MdidSdkHelper"
+
         @JvmStatic
         fun tryCreate(): OaidSdk? {
             try {
@@ -27,13 +27,10 @@ internal class OaidSdkImplV1025 : OaidSdk{
                 f_sdk_date.isAccessible = true
                 val obj_sdkHelper = cls_MdidSdkHelper.newInstance()
                 val sdk_date = f_sdk_date[obj_sdkHelper] as String
-                //fixme 用于网游sdk时，游戏用的oaid版本可能不兼容。
-                // 按1025的调用方式能兼容到哪个旧版sdk，需要逐个调研
-                // 当前认为只要有这个字段值，就兼容
                 // 1.0.13的值2020011018
                 log("oaid sdk vcode=$sdk_date")
-                if (!TextUtils.isEmpty(sdk_date) && "2020011018" != sdk_date) {
-                    return OaidSdkImplV1025()
+                if ("2020011018" == sdk_date) {
+                    return OaidSdkImplV1013()
                 }
             } catch (t: Throwable) {
                 t.printStackTrace()
@@ -42,8 +39,35 @@ internal class OaidSdkImplV1025 : OaidSdk{
         }
     }
 
+    override fun initSdk(context: Context, handler: IdentifierListenerHandler): Int {
+        return try {
+            val hostClassLoader = context.classLoader
+            //com.bun.miitmdid.core.JLibrary.InitEntry(context)
+            val cls_JLibrary = hostClassLoader.loadClass("com.bun.miitmdid.core.JLibrary")
+            val m_InitEntry = cls_JLibrary.getDeclaredMethod("InitEntry", Context::class.java)
+            m_InitEntry.invoke(null, context)
+            //1.0.13的IIdentifierListener
+            val cls_IIdentifierListener =
+                hostClassLoader.loadClass(IIdentifierListener_name)
+            val obj_identifierListener =
+                Proxy.newProxyInstance(hostClassLoader,
+                    arrayOf(cls_IIdentifierListener),
+                    handler)
+            initSdk(context, obj_identifierListener)
+        } catch (t: Throwable){
+            t.printStackTrace()
+            ErrorCode.INIT_HELPER_CALL_ERROR
+        }.let {
+            //1.0.13返回0也是正确结果
+            if (it == 0) {
+                return@let ErrorCode.INIT_ERROR_RESULT_DELAY
+            }
+            it
+        }
+    }
     override fun initSdk(context: Context, objIIdentifierListener: Any): Int {
         try {
+
             val hostClassLoader = context.classLoader
             val cls_MdidSdkHelper = hostClassLoader.loadClass(MdidSdkHelper_name)
             val cls_IIdentifierListener =
@@ -57,6 +81,8 @@ internal class OaidSdkImplV1025 : OaidSdk{
         }
         return ErrorCode.INIT_HELPER_CALL_ERROR
     }
+
+
 
     override fun getIdSupplierOnSupport(args: Array<Any?>?): Any? {
         return if (args != null && args.size >= 2) {

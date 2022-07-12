@@ -12,6 +12,9 @@ import java.io.InputStreamReader
  */
 internal class OaidSdkImplV1026 : OaidSdk {
     companion object {
+        private const val IIdentifierListener_name = "com.bun.miitmdid.interfaces.IIdentifierListener"
+        private const val MdidSdkHelper_name = "com.bun.miitmdid.core.MdidSdkHelper"
+
         init {
             try {
                 //从1.0.30开始才有此so
@@ -20,11 +23,12 @@ internal class OaidSdkImplV1026 : OaidSdk {
             }
         }
 
+        @JvmStatic
         fun tryCreate(): OaidSdk? {
             try {
                 val cls_MdidSdkHelper: Class<*> =
                     OaidSdkImplV1026::class.java.getClassLoader()
-                        ?.loadClass("com.bun.miitmdid.core.MdidSdkHelper") ?: return null
+                        ?.loadClass(MdidSdkHelper_name) ?: return null
                 //public static final int SDK_VERSION_CODE
                 val f_SDK_VERSION_CODE = cls_MdidSdkHelper.getDeclaredField("SDK_VERSION_CODE")
                 f_SDK_VERSION_CODE.isAccessible = true
@@ -46,9 +50,9 @@ internal class OaidSdkImplV1026 : OaidSdk {
         try {
             initCert(context)
             val hostClassLoader = context.classLoader
-            val cls_MdidSdkHelper = hostClassLoader.loadClass("com.bun.miitmdid.core.MdidSdkHelper")
+            val cls_MdidSdkHelper = hostClassLoader.loadClass(MdidSdkHelper_name)
             val cls_IIdentifierListener =
-                hostClassLoader.loadClass("com.bun.miitmdid.interfaces.IIdentifierListener")
+                hostClassLoader.loadClass(IIdentifierListener_name)
             //assert cls_IIdentifierListener.isAssignableFrom(objIIdentifierListener.getClass());
             var code = invokeInitSdkV1200(context,
                 objIIdentifierListener,
@@ -124,7 +128,7 @@ internal class OaidSdkImplV1026 : OaidSdk {
                 }
                 val hostClassLoader = context.classLoader
                 val cls_MdidSdkHelper =
-                    hostClassLoader.loadClass("com.bun.miitmdid.core.MdidSdkHelper")
+                    hostClassLoader.loadClass(MdidSdkHelper_name)
                 val m_initCert = cls_MdidSdkHelper.getDeclaredMethod("InitCert",
                     Context::class.java,
                     java.lang.String::class.java)

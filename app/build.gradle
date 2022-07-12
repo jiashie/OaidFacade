@@ -39,8 +39,14 @@ android {
         }
         oaid26 {
             sourceSets.getByName('oaid26') {
-                jniLibs.srcDirs += ['oaid25/libs']
-                assets.srcDirs += ['oaid25/assets']
+                jniLibs.srcDirs += ['oaid26/libs']
+                assets.srcDirs += ['oaid26/assets']
+            }
+        }
+        oaid13 {
+            sourceSets.getByName('oaid13') {
+                jniLibs.srcDirs += ['oaid13/libs']
+                assets.srcDirs += ['oaid13/assets']
             }
         }
     }
@@ -73,4 +79,5 @@ dependencies {
 
     oaid25Implementation fileTree(include: ['*.jar', '*.aar'], dir: 'oaid25/libs')
     oaid26Implementation fileTree(include: ['*.jar', '*.aar'], dir: 'oaid26/libs')
+    oaid13Implementation fileTree(include: ['*.jar', '*.aar'], dir: 'oaid13/libs')
 }
