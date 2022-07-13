@@ -12,16 +12,14 @@ import kotlin.Throwable
 /**
  * v1.0.25及之前版本
  */
-internal class OaidSdkImplV1025 : OaidSdk{
+internal class OaidSdkImplV1025 : OaidSdkBase(){
     companion object {
-        private const val IIdentifierListener_name = "com.bun.miitmdid.interfaces.IIdentifierListener"
-        private const val MdidSdkHelper_name = "com.bun.miitmdid.core.MdidSdkHelper"
         @JvmStatic
         fun tryCreate(): OaidSdk? {
             try {
                 val cls_MdidSdkHelper: Class<*> =
                     OaidSdkImplV1025::class.java.getClassLoader()
-                        ?.loadClass(MdidSdkHelper_name) ?: return null
+                        ?.loadClass(MdidSdkHelper_className) ?: return null
                 //private String sdk_date = "20200702"
                 val f_sdk_date = cls_MdidSdkHelper.getDeclaredField("sdk_date")
                 f_sdk_date.isAccessible = true
@@ -42,12 +40,12 @@ internal class OaidSdkImplV1025 : OaidSdk{
         }
     }
 
-    override fun initSdk(context: Context, objIIdentifierListener: Any): Int {
+    override fun doInitSdk(context: Context, objIIdentifierListener: Any): Int {
         try {
             val hostClassLoader = context.classLoader
-            val cls_MdidSdkHelper = hostClassLoader.loadClass(MdidSdkHelper_name)
+            val cls_MdidSdkHelper = hostClassLoader.loadClass(MdidSdkHelper_className)
             val cls_IIdentifierListener =
-                hostClassLoader.loadClass(IIdentifierListener_name)
+                hostClassLoader.loadClass(getIdentifierListenerClassName())
             //assert cls_IIdentifierListener.isAssignableFrom(objIIdentifierListener.getClass());
             val m_InitSdk = cls_MdidSdkHelper.getDeclaredMethod("InitSdk",
                 Context::class.java, Boolean.TYPE, cls_IIdentifierListener)
