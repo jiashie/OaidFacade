@@ -1,2 +1,2 @@
 # OaidFacade
-facade for varying version of oaid sdk
+facade for varying version of oaid sdk。
